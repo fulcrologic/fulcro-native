@@ -40,6 +40,29 @@ The standard `com.fulcrologic.fulcro.expo-application/fulcro-app` function needs
 This is done for you if you instead use the `com.fulcrologic.fulcro-native.application/fulcro-app` function, which is
 otherwise identical (it just passes your other options through).
 
+```
+(ns
+  (:require
+    [com.fulcrologic.fulcro-native.expo-application :as expoapp]
+    [com.fulcrologic.fulcro.application :as app]))
+
+(defonce app (expoapp/fulcro-app {}))
+
+
+;; later (in entry point):
+
+(app/mount! app RootComponent :native)
+```
+
+Calling `mount!` again will just refresh the UI.
+
+== Hot Code Reload
+
+Be sure to *disable both* live reload and hot reload in the Expo system. Shadow-cljs will do hot code reload without
+them, and if they are enabled they will fight.
+
+You'll want your shadow-cljs config to include an after-load function that calls `app/mount!` to re-render the UI.
+
 == Native Component Helpers
 
 The `com.fulcrologic.fulcro-native.alpha.components` namespace includes functions that properly wrap many of the predefined
