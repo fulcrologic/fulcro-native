@@ -1,0 +1,60 @@
+:source-highlighter: coderay
+:source-language: clojure
+:toc:
+:toc-placement: preamble
+:sectlinks:
+:sectanchors:
+:sectnums:
+
+image:https://img.shields.io/clojars/v/com.fulcrologic/fulcro-native.svg[link=https://clojars.org/com.fulcrologic/fulcro-native]
+
+A small set of helpers for writing with React Native apps with Fulcro.
+
+Fulcro itself works fine with React Native, but there are a few small configuration details that this library
+does for you. Additionally, it includes some things like factory helpers and wrappers for the standard
+React Native components.
+
+== Status
+
+This library is in active development. It is useful, but incomplete.
+
+== Usage
+
+Add the latest version to your project dependencies. At the moment the helper code
+only supports apps written with Expo, but if you look in `expo-application` you'll
+see there isn't much to change to work with non-expo apps.
+
+We only test against the shadow-cljs build tool. If you're using standard cljs compiler for npm deps then you'll have to
+manage making sure `react-native` is available.
+
+You will need the following NPM dependencies:
+
+- `expo`
+- `react`
+- `react-native`
+- `create-react-class`
+
+== Creating an Application
+
+The standard `com.fulcrologic.fulcro.expo-application/fulcro-app` function needs a few configuration parameters to be changed to work with Native.
+This is done for you if you instead use the `com.fulcrologic.fulcro-native.application/fulcro-app` function, which is
+otherwise identical (it just passes your other options through).
+
+== Native Component Helpers
+
+The `com.fulcrologic.fulcro-native.alpha.components` namespace includes functions that properly wrap many of the predefined
+components (if you want to add some, please feel free to send a PR). There is also a `react-factory` function
+in that namespace that can properly wrap React Native components, and does some nice automatic argument conversion
+for you: In particular if you use a raw string as a child, it will be auto-wrapped in a `ui-text` component with
+empty props:
+
+```
+;; You can write
+(ui-button {} (ui-text {} "Hello"))
+;; OR
+(ui-button {} "Hello") 
+```
+
+This namespace has an `alpha` component to it because we do want to evolve this API to do some of the same
+nice things that the DOM macros do, like making the props optional. Currently that is not supported.
+

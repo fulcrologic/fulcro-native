@@ -1,0 +1,9 @@
+{:paths   ["src/main"]
+
+ :deps    {com.fulcrologic/fulcro    {:mvn/version "3.0.2" :scope "provided"}
+           com.taoensso/timbre       {:mvn/version "4.10.0"}
+           org.clojure/clojure       {:mvn/version "1.10.0" :scope "provided"}
+           org.clojure/clojurescript {:mvn/version "1.10.520" :scope "provided"}}
+
+ :aliases {:dev {:extra-deps {thheller/shadow-cljs {:mvn/version "2.8.58"}
+                              binaryage/devtools   {:mvn/version "0.9.10"}}}}}
