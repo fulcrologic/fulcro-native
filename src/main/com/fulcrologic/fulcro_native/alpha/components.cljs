@@ -1,11 +1,13 @@
 (ns com.fulcrologic.fulcro-native.alpha.components
   (:require
-    [com.fulcrologic.fulcro.components :refer [force-children]]
+    [com.fulcrologic.fulcro-native.events :as evt]
+    [com.fulcrologic.fulcro.components :as comp :refer [force-children defsc]]
     ["react-native" :as rn]
     ["react" :as r]
     [clojure.string :as str]
     [clojure.walk :as w]
     [clojure.set :as set]
+    [goog.object :as gobj]
     [taoensso.timbre :as log]))
 
 (def create-element r/createElement)
@@ -42,6 +44,44 @@
           (clj->js props)
           cs)))))
 
+(defsc WrappedInput
+  "A component that can wrap a react native text input and properly coordinate Fulcro props changes using
+   a React component-local state buffer."
+  [this {:keys [onChange] :as input-props} {:keys [element-factory]}]
+  {:componentDidMount  (fn [this]
+                         (if-let [v (some-> this comp/props :value)]
+                           (comp/set-state! this {:value v})))
+   :componentDidUpdate (fn [this pp ps]
+                         (let [visible-value   (comp/get-state this :value)
+                               old-props-value (:value pp)
+                               props-value     (-> this comp/props :value)]
+                           (when (and props-value (not= props-value old-props-value) (not= props-value visible-value))
+                             (comp/set-state! this {:value props-value}))))
+   :initLocalState     (fn [this]
+                         {:on-change (fn [evt] (comp/set-state! this {:value (evt/event-text evt)}))
+                          :save-ref! (fn [r] (gobj/set this "wrapped-input" r))})}
+  (let [{:keys [save-ref! on-change value]} (comp/get-state this)]
+    (when element-factory
+      (let [props (-> input-props
+                    (assoc
+                      :value value
+                      :onChange (fn [evt]
+                                  (on-change evt)
+                                  (when onChange
+                                    (onChange evt)))
+                      :ref save-ref!)
+                    clj->js)]
+        (element-factory props)))))
+
+(def ui-wrapped-input (comp/computed-factory WrappedInput))
+
+(defn wrap-text-input
+  "Wraps a native text input factory such that Fulcro props updates will work without the cursor jumping about.
+
+  `input-factory` is a low-level (js) React control that acts like a TextInput."
+  [input-factory]
+  (fn [props]
+    (ui-wrapped-input props {:element-factory input-factory})))
 
 ;; copy from natal-shell
 (def camel-rx #"([a-z])([A-Z])")
