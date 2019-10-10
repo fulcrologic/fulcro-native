@@ -78,7 +78,9 @@
 (defn wrap-text-input
   "Wraps a native text input factory such that Fulcro props updates will work without the cursor jumping about.
 
-  `input-factory` is a low-level (js) React control that acts like a TextInput."
+  `input-factory` is a low-level (js) React control that acts like a TextInput.
+
+  Returns a `(fn [js-props])` that can be used as a UI element factory."
   [input-factory]
   (fn [props]
     (ui-wrapped-input props {:element-factory input-factory})))
