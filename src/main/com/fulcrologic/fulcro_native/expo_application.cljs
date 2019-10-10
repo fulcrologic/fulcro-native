@@ -9,7 +9,9 @@
 (defonce root-ref (atom nil))
 (defonce root-component-ref (atom nil))
 
-(defn render-root [root]
+(defn render-root
+  "A function that can be used as the main Fulcro render for an expo app."
+  [root]
   (try
     (let [first-call? (nil? @root-ref)]
       (reset! root-ref root)
