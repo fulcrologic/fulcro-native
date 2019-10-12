@@ -81,3 +81,33 @@ empty props:
 This namespace has an `alpha` component to it because we do want to evolve this API to do some of the same
 nice things that the DOM macros do, like making the props optional. Currently that is not supported.
 
+== React Factory
+
+The element factory support includes component-local style support. This is a feature
+that we're playing with while in Alpha, and will probably evolve. It allows you to co-locate style declarations
+in component options, and then apply them to the elements within. It uses the current value of Fulcro's
+`comp/*parent*` to fine the styles. So, the basic usage right now is:
+
+```
+(ns my.app.ui
+  (:require
+    ["some-native-lib" :refer [FancyThing]]
+    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+    [com.fulcrologic.fulcro-native.alpha.components :as nc :refer [react-factory ui-text ui-view]]
+    ...))
+
+(def ui-fancy-thing (react-factory FancyThing))
+
+(defsc SomeComponent [this props]
+  {:style {:bold {:fontWeight "bold"}
+           :warning {:color "black"
+                     :backgroundColor "red"}}
+   ...other defsc options...}
+  ;; normal style
+  (ui-view {:style {:color "black"}}
+    ;; Look up style in current component's options
+    (ui-fancy-thing {:style :.bold}
+       ;; Combine together styles from component's options with some optional normal ones
+       (ui-text {:style {:marginLeft 10}
+                 :styles [:.bold (when warning? :.warning)]} "Text"))))
+```

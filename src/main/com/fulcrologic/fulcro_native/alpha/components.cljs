@@ -62,12 +62,14 @@
                   {}
                   ks))
               props)
-      (map? style) (merge style))))
+      (map? style) (update :style merge style))))
 
 (defn rewrite-props
   "Handle any magical props that Fulcro supports"
   [props]
-  (fix-style props))
+  (if (map? props)
+    (fix-style props)
+    props))
 
 (declare ui-text)
 
