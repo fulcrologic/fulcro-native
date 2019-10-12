@@ -111,3 +111,11 @@ in component options, and then apply them to the elements within. It uses the cu
        (ui-text {:style {:marginLeft 10}
                  :styles [:.bold (when warning? :.warning)]} "Text"))))
 ```
+
+If you want to use some other component's style data, simply wrap it with a binding (NOTE: don't render data-driven
+Fulcro components inside of such a binding or you'll confuse things):
+
+```
+  (binding [comp/*parent* SomeComponent]
+    (ui-text {:style :.bold} "Hi"))
+```
