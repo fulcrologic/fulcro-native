@@ -12,10 +12,64 @@
 
 (def create-element r/createElement)
 
-(defn ui-text
-  "Create a rn Text component."
-  ([props s] (create-element rn/Text (clj->js props) s))
-  ([s] (create-element rn/Text #js {} s)))
+(defn- remove-separators [s]
+  (when s
+    (str/replace s #"^[.#]" "")))
+
+(defn- get-tokens [k]
+  (re-seq #"[#.]?[^#.]+" (name k)))
+
+(defn parse-style-keyword
+  "Parse shorthand keyword and return sequence of individual style keys.
+
+  (parse :.klass3.klass1.klass2)
+  => [:klass3 :klass1 :klass2]"
+  [k]
+  (if (keyword? k)
+    (let [tokens  (get-tokens k)
+          classes (->> tokens (clojure.core/filter #(re-matches #"^\..*" %)))]
+      (when-not (re-matches #"^(\.[^.#]+|#[^.#]+)+$" (name k))
+        (throw (ex-info "Invalid style keyword." {:item k})))
+      (into []
+        (comp
+          (keep remove-separators)
+          (map keyword))
+        classes))
+    nil))
+
+(defn fix-style
+  "Set the style on `props` to whatever the component-local style is on the
+  in-context *parent* at key `s` (if and only if it exists). Otherwise dissociates
+  the :style prop altogether."
+  [props]
+  (let [style  (:style props)
+        styles (:styles props)
+        props  (dissoc props :styles)]
+    (cond-> (if-let [ks (seq
+                          (keep identity
+                            (concat
+                              (mapcat parse-style-keyword styles)
+                              (parse-style-keyword style))))]
+              (assoc props
+                :style
+                (reduce
+                  (fn [style k]
+                    (if-let [declared-style (some-> comp/*parent*
+                                              (comp/component-options :style)
+                                              (get k))]
+                      (merge style declared-style)
+                      style))
+                  {}
+                  ks))
+              props)
+      (map? style) (merge style))))
+
+(defn rewrite-props
+  "Handle any magical props that Fulcro supports"
+  [props]
+  (fix-style props))
+
+(declare ui-text)
 
 (defn react-factory
   "Returns a factory for raw JS React classes.
@@ -32,8 +86,9 @@
   will be converted to js for interop. You may pass js props as an optimization."
   [js-component-class]
   (fn [props & children]
-    (let [cs (force-children children)
-          c  (first cs)]
+    (let [cs    (force-children children)
+          props (rewrite-props props)
+          c     (first cs)]
       (if (and c (string? c) (= 1 (count cs)))
         (create-element
           js-component-class
@@ -43,6 +98,11 @@
           js-component-class
           (clj->js props)
           cs)))))
+
+(defn ui-text
+  "Create a rn Text component."
+  ([props s] (create-element rn/Text (clj->js (rewrite-props props)) s))
+  ([s] (create-element rn/Text #js {} s)))
 
 (defsc WrappedInput
   "A component that can wrap a react native text input and properly coordinate Fulcro props changes using
