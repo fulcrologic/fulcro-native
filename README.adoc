@@ -63,6 +63,35 @@ them, and if they are enabled they will fight.
 
 You'll want your shadow-cljs config to include an after-load function that calls `app/mount!` to re-render the UI.
 
+== Loading Fonts and Images with Expo
+
+Expo provides a mechanism to pre-load and cache fonts and static images during app startup.  If you use the 
+`com.fulcrologic.fulcro-native.expo-application/fulcro-app` function, this is taken care of for you.  All you need to do is specify the
+images and/or fonts you want to cache in the app configuration, as follows:
+
+```
+(ns
+  (:require
+    [com.fulcrologic.fulcro-native.expo-application :as expoapp]
+    [com.fulcrologic.fulcro.application :as app]))
+
+; require images individually, so you can reference them when needed in the app
+(defonce profile-blank (js/require "../assets/images/profile.png"))
+(defonce background (js/require "../assets/images/background.png"))
+
+(defonce images [profile-blank background])
+
+(defonce fonts [["Roboto" (js/require "../node_modules/native-base/Fonts/Roboto.ttf")]
+                ["Roboto_medium" (js/require "../node_modules/native-base/Fonts/Roboto_medium.ttf")]
+                ["Avenir Next" (js/require "../assets/fonts/AvenirNext-Regular-08.ttf")]])
+
+
+(defonce app (expoapp/fulcro-app {:cached-images images
+                                  :cached-fonts fonts}))
+
+```
+Note that the asset paths are relative to the /app directory, or wherever you have set the output directory for the mobile app build.
+
 == Native Component Helpers
 
 The `com.fulcrologic.fulcro-native.alpha.components` namespace includes functions that properly wrap many of the predefined
@@ -119,3 +148,4 @@ Fulcro components inside of such a binding or you'll confuse things):
   (binding [comp/*parent* SomeComponent]
     (ui-text {:style :.bold} "Hi"))
 ```
+
