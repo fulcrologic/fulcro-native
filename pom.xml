@@ -4,7 +4,7 @@
   <groupId>com.fulcrologic</groupId>
   <artifactId>fulcro-native</artifactId>
   <packaging>jar</packaging>
-  <version>0.0.3-alpha</version>
+  <version>0.0.4-alpha</version>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -21,7 +21,7 @@
     <url>https://github.com/fulcrologic/fulcro-native</url>
     <connection>scm:git:git://github.com/fulcrologic/fulcro-native.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/fulcrologic/fulcro-native.git</developerConnection>
-    <tag>287d8d4c961c8878a0c386e3c75196f75c9b241f</tag>
+    <tag>5c1e2474f21ddd2f9e6e459a6368bd305a7aac77</tag>
   </scm>
   <distributionManagement>
     <repository>
