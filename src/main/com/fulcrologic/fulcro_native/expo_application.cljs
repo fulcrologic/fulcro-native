@@ -4,6 +4,7 @@
     ["create-react-class" :as crc]
     [com.fulcrologic.fulcro.application :as app]
     [com.fulcrologic.fulcro.rendering.keyframe-render :as kr]
+    [com.fulcrologic.fulcro-native.expo-assets :as assets]
     [taoensso.timbre :as log]))
 
 (defonce root-ref (atom nil))
@@ -11,7 +12,7 @@
 
 (defn render-root
   "A function that can be used as the main Fulcro render for an expo app."
-  [root]
+  [fonts images root]
   (try
     (let [first-call? (nil? @root-ref)]
       (reset! root-ref root)
@@ -22,22 +23,31 @@
           root-component-ref)
         (let [Root
               (crc
-                #js {:componentDidMount
+                #js {:getInitialState
                      (fn []
-                       (this-as this
-                         (reset! root-component-ref this)))
+                       #js {:assetsLoaded false})
+                     :componentDidMount
+                     (fn []
+                       (this-as ^js this
+                         (reset! root-component-ref this)
+                         (assets/cache-assets fonts images (fn []
+                                                             (.setState this #js {:assetsLoaded true})))))
                      :componentWillUnmount
                      (fn []
                        (reset! root-component-ref nil))
                      :render
                      (fn []
-                       (let [body @root-ref]
-                         (try
-                           (if (fn? body)
-                             (body)
-                             body)
-                           (catch :default e
-                             (log/error e "Render failed")))))})]
+                       (this-as this
+                         (if this.state.assetsLoaded
+                           (let [body @root-ref]
+                             (try
+                               (if (fn? body)
+                                 (body)
+                                 body)
+                               (catch :default e
+                                 (log/error e "Render failed"))))
+                           (assets/app-loading))
+                         ))})]
           (expo/registerRootComponent Root))))
     (catch :default e
       (log/error e "Unable to mount/refresh"))))
@@ -45,9 +55,9 @@
 (defn fulcro-app
   "Identical to com.fulcrologic.fulcro.application/fulcro-app, but modifies a few options
   to ensure initial mount works properly for Native Expo apps."
-  [options]
+  [{:keys [cached-fonts cached-images] :as options}]
   (app/fulcro-app
     (merge
       {:optimized-render! kr/render!
-       :render-root!      render-root}
+       :render-root!      (partial render-root cached-fonts cached-images)}
       options)))
