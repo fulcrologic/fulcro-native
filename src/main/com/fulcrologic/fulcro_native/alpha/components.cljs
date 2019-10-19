@@ -76,30 +76,43 @@
 (defn react-factory
   "Returns a factory for raw JS React classes.
 
+  options can include:
+
+  `:ui-text` - Specify how to do auto-wrapping of raw strings (default is to use native base Text component).  You
+  may specify `false` to create a factory that does no special wrapping or a `(fn [str] element)` that returns the
+  element-wrapped string.
+
   ```
   (def ui-thing (react-factory SomeReactLibComponent))
 
   ...
+
   (defsc X [_ _]
     (ui-thing {:value 1}))
   ```
 
   The returned function will accept CLJS maps as props (not optional) and then any number of children. The CLJS props
   will be converted to js for interop. You may pass js props as an optimization."
-  [js-component-class]
-  (fn [props & children]
-    (let [cs    (force-children children)
-          props (rewrite-props props)
-          c     (first cs)]
-      (if (and c (string? c) (= 1 (count cs)))
-        (create-element
-          js-component-class
-          (clj->js props)
-          (ui-text {} c))
-        (apply create-element
-          js-component-class
-          (clj->js props)
-          cs)))))
+  ([js-component-class {:keys [ui-text]}]
+   (fn [props & children]
+     (let [cs    (force-children children)
+           props (rewrite-props props)
+           c     (first cs)]
+       (if (and c ui-text (string? c) (= 1 (count cs)))
+         (create-element
+           js-component-class
+           (clj->js props)
+           (ui-text c))
+         (apply create-element
+           js-component-class
+           (clj->js props)
+           cs)))))
+  ([js-component-class]
+   (react-factory js-component-class {:ui-text (fn [child]
+                                                 (create-element
+                                                   rn/Text
+                                                   nil
+                                                   child))})))
 
 (defn ui-text
   "Create a rn Text component."
