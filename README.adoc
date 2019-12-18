@@ -40,7 +40,8 @@ The standard `com.fulcrologic.fulcro.expo-application/fulcro-app` function needs
 This is done for you if you instead use the `com.fulcrologic.fulcro-native.application/fulcro-app` function, which is
 otherwise identical (it just passes your other options through).
 
-```
+[source, clojure]
+-----
 (ns
   (:require
     [com.fulcrologic.fulcro-native.expo-application :as expoapp]
@@ -52,7 +53,7 @@ otherwise identical (it just passes your other options through).
 ;; later (in entry point):
 
 (app/mount! app RootComponent :native)
-```
+-----
 
 Calling `mount!` again will just refresh the UI.
 
@@ -69,7 +70,8 @@ Expo provides a mechanism to pre-load and cache fonts and static images during a
 `com.fulcrologic.fulcro-native.expo-application/fulcro-app` function, this is taken care of for you.  All you need to do is specify the
 images and/or fonts you want to cache in the app configuration, as follows:
 
-```
+[source, clojure]
+-----
 (ns
   (:require
     [com.fulcrologic.fulcro-native.expo-application :as expoapp]
@@ -88,8 +90,8 @@ images and/or fonts you want to cache in the app configuration, as follows:
 
 (defonce app (expoapp/fulcro-app {:cached-images images
                                   :cached-fonts fonts}))
+-----
 
-```
 Note that the asset paths are relative to the /app directory, or wherever you have set the output directory for the mobile app build.
 
 == Native Component Helpers
@@ -100,12 +102,12 @@ in that namespace that can properly wrap React Native components, and does some 
 for you: In particular if you use a raw string as a child, it will be auto-wrapped in a `ui-text` component with
 empty props:
 
-```
+[source, clojure]
 ;; You can write
 (ui-button {} (ui-text {} "Hello"))
 ;; OR
 (ui-button {} "Hello") 
-```
+-----
 
 This namespace has an `alpha` component to it because we do want to evolve this API to do some of the same
 nice things that the DOM macros do, like making the props optional. Currently that is not supported.
@@ -117,7 +119,8 @@ that we're playing with while in Alpha, and will probably evolve. It allows you 
 in component options, and then apply them to the elements within. It uses the current value of Fulcro's
 `comp/*parent*` to fine the styles. So, the basic usage right now is:
 
-```
+[source, clojure]
+-----
 (ns my.app.ui
   (:require
     ["some-native-lib" :refer [FancyThing]]
@@ -139,13 +142,92 @@ in component options, and then apply them to the elements within. It uses the cu
        ;; Combine together styles from component's options with some optional normal ones
        (ui-text {:style {:marginLeft 10}
                  :styles [:.bold (when warning? :.warning)]} "Text"))))
-```
+-----
 
 If you want to use some other component's style data, simply wrap it with a binding (NOTE: don't render data-driven
 Fulcro components inside of such a binding or you'll confuse things):
 
-```
+[source, clojure]
+-----
   (binding [comp/*parent* SomeComponent]
     (ui-text {:style :.bold} "Hi"))
-```
+-----
 
+== Using Fulcro Inspect
+
+You'll need to download the Fulcro Inspect electon app, which can be found in the
+https://github.com/fulcrologic/fulcro-inspect/releases[release section] of the Fulcro Inspect repository.
+You'll also need to configure `shadow-cljs.edn` to use the websocket preload.
+
+[source, clojure]
+-----
+...
+             :devtools   {:preloads   [... com.fulcrologic.fulcro.inspect.websocket-preload]}
+...
+-----
+
+This will attempt to contact inspect via a websocket on localhost.
+For everything *except* iOS Simulator this won't work, and you'll also have to deal with networking setup, as described next.
+
+== Networking with Android Simulator and Devices
+
+The iOS simulator will generally let you use `localhost`,
+but devices and Android simulator will think of `localhost` as the handheld device (sim) itself. Therefore, you'll have
+to find your machine's IP address (e.g. via `ifconfig`), make sure the device is on the same LAN, and configure that
+IP into your application's API URL, and also Inspect's websocket.
+
+Your application startup code will need to explicitly set the URL of your server API (even if running locally).
+Something like this should work (pay attention to the goog-define):
+
+[source, clojure]
+-----
+(ns app.client-native
+  "Entry point for native client."
+  (:require
+    [app.application :refer [SPA]]
+    [com.fulcrologic.fulcro-native.expo-application :as expo]
+    [app.mobile-ui.root :as root]
+    [taoensso.timbre :as log]
+    [com.fulcrologic.fulcro.networking.http-remote :as net]
+    [com.fulcrologic.fulcro.application :as app]
+    [com.fulcrologic.fulcro.ui-state-machines :as uism]
+    [app.model.session :as session]))
+
+;; Allow defines in shadow-cljs to define API endpoint for dev mode (and even prod mode)
+(goog-define SERVER_URL "http://production.server.com/api")
+
+(defn ^:export start
+  {:dev/after-load true}
+  []
+  (log/info "Re-mounting")
+  (app/mount! @SPA root/Root :i-got-no-dom-node))
+
+(defn init []
+  (reset! SPA (expo/fulcro-app
+                {:remotes          {:remote (net/fulcro-http-remote {:url SERVER_URL})}}))
+  (start))
+-----
+
+Inspect has a similar goog define for the inspect server host. So, you can define both of these in the dev
+section of your shadow-cljs build config:
+
+[source, clojure]
+-----
+{:deps     {:aliases [:cljs :dev]}
+ :nrepl    {:port 9000}
+ :jvm-opts ["-Xmx2G"]
+ :builds   {:native
+            {:target     :react-native
+             ;; entry point
+             :init-fn    app.client-native/init
+             ;; Use closure defines to point things at your correct server URL, and same with websockets inspect.
+             ;; In this example 192.168.1.3 is the IP of your machine on your dev LAN (visible in ifconfig).
+             :dev        {:closure-defines {app.client-native/SERVER_URL "http://192.168.1.3:3000/api"
+                                            com.fulcrologic.fulcro.inspect.inspect_ws/SERVER_HOST "192.168.1.3"}}
+             :devtools   {:autoload   true
+                          :after-load app.client-native/start
+                          :preloads   [shadow.expo.keep-awake
+                                       com.fulcrologic.fulcro.inspect.websocket-preload]}}}}
+-----
+
+See the fulcro native template for a working example.
