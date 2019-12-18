@@ -169,6 +169,8 @@ You'll also need to configure `shadow-cljs.edn` to use the websocket preload.
 This will attempt to contact inspect via a websocket on localhost.
 For everything *except* iOS Simulator this won't work, and you'll also have to deal with networking setup, as described next.
 
+WARNING: Using Inspect on anything but iOS Sim requires Fulcro 3.0.17+
+
 == Networking with Android Simulator and Devices
 
 The iOS simulator will generally let you use `localhost`,
