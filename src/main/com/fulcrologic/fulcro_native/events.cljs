@@ -3,4 +3,4 @@
 (defn event-text
   "Returns the text value produced by a TextInput onChange event."
   [text-event]
-  (some-> text-event .-nativeEvent .-text))
+  (some-> ^js text-event .-nativeEvent .-text))
