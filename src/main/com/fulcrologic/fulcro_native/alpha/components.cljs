@@ -211,7 +211,6 @@
 
 (def ui-activity-indicator (react-factory rn/ActivityIndicator))
 (def ui-button (react-factory rn/Button))
-(def ui-date-picker-ios (react-factory rn/DatePickerIOS))
 (def ui-drawer-layout-android (react-factory rn/DrawerLayoutAndroid))
 (def ui-flat-list (react-factory rn/FlatList))
 (def ui-image (react-factory rn/Image))
@@ -239,7 +238,6 @@
 (def ui-touchable-opacity (react-factory rn/TouchableOpacity))
 (def ui-touchable-without-feedback (react-factory rn/TouchableWithoutFeedback))
 (def ui-view (react-factory rn/View))
-(def ui-view-pager-android (react-factory rn/ViewPagerAndroid))
 (def ui-virtualized-list (react-factory rn/VirtualizedList))
 
 (defn ios?
