@@ -2,15 +2,18 @@
   (:require
     [com.fulcrologic.fulcro-native.events :as evt]
     [com.fulcrologic.fulcro.components :as comp :refer [force-children defsc]]
-    ["react-native" :as rn]
-    ["react" :as r]
+    #?@(:cljs [[goog.object :as gobj]
+               ["react-native" :as react-native-package]
+               ["react" :as react-package]])
     [clojure.string :as str]
     [clojure.walk :as w]
     [clojure.set :as set]
-    [goog.object :as gobj]
     [taoensso.timbre :as log]))
 
-(def create-element r/createElement)
+#?(:clj (def clj->js identity))
+(def r #?(:cljs react-package :clj {}))
+(def rn #?(:cljs react-native-package :clj {}))
+(def create-element #?(:cljs react-package/createElement :clj identity))
 
 (defn- remove-separators [s]
   (when s
@@ -110,14 +113,14 @@
   ([js-component-class]
    (react-factory js-component-class {:ui-text (fn [child]
                                                  (create-element
-                                                   rn/Text
+                                                   (comp/isoget rn "Text")
                                                    nil
                                                    child))})))
 
 (defn ui-text
   "Create a rn Text component."
-  ([props s] (create-element rn/Text (clj->js (rewrite-props props)) s))
-  ([s] (create-element rn/Text #js {} s)))
+  ([props s] (create-element (comp/isoget rn "Text") (clj->js (rewrite-props props)) s))
+  ([s] (create-element (comp/isoget rn "Text") #js {} s)))
 
 (defsc WrappedInput
   "A component that can wrap a react native text input and properly coordinate Fulcro props changes using
@@ -134,7 +137,7 @@
                              (comp/set-state! this {:value props-value}))))
    :initLocalState     (fn [this]
                          {:on-change (fn [evt] (comp/set-state! this {:value (evt/event-text evt)}))
-                          :save-ref! (fn [r] (gobj/set this "wrapped-input" r))})}
+                          :save-ref! (fn [r] #?(:cljs (gobj/set this "wrapped-input" r)))})}
   (let [{:keys [save-ref! on-change value]} (comp/get-state this)]
     (when element-factory
       (let [props (-> input-props
@@ -198,54 +201,55 @@
       data)))
 
 ;; apis
-(def platform rn/Platform)
-(def style-sheet rn/StyleSheet)
+(def platform (comp/isoget rn "Platform"))
+(def style-sheet (comp/isoget rn "StyleSheet"))
 
 (defn create-style-sheet
   "Create a React Native style sheet. You can use kebab case and it will be auto-converted to camel case."
   [styles]
-  (rn/StyleSheet.create
-    (clj->js
-      (zipmap (keys styles)
-        (map #(map-keys->camel-case % :html-props true) (vals styles))))))
+  #?(:cljs
+     (react-native-package/StyleSheet.create
+       (clj->js
+         (zipmap (keys styles)
+           (map #(map-keys->camel-case % :html-props true) (vals styles)))))))
 
-(def ui-activity-indicator (react-factory rn/ActivityIndicator))
-(def ui-button (react-factory rn/Button))
-(def ui-drawer-layout-android (react-factory rn/DrawerLayoutAndroid))
-(def ui-flat-list (react-factory rn/FlatList))
-(def ui-image (react-factory rn/Image))
-(def ui-image-background (react-factory rn/ImageBackground))
-(def ui-input-accessory-view (react-factory rn/InputAccessoryView))
-(def ui-keyboard-avoiding-view (react-factory rn/KeyboardAvoidingView))
-(def ui-modal (react-factory rn/Modal))
-(def ui-picker (react-factory rn/Picker))
-(def ui-picker-ios (react-factory rn/PickerIOS))
-(def ui-progress-view-ios (react-factory rn/ProgressViewIOS))
-(def ui-refresh-control (react-factory rn/RefreshControl))
-(def ui-safe-area-view (react-factory rn/SafeAreaView))
-(def ui-scroll-view (react-factory rn/ScrollView))
-(def ui-section-list (react-factory rn/SectionList))
-(def ui-segmented-control-ios (react-factory rn/SegmentedControlIOS))
-(def ui-slider (react-factory rn/Slider))
-(def ui-status-bar (react-factory rn/StatusBar))
-(def ui-switch (react-factory rn/Switch))
-(def ui-tab-bar-ios (react-factory rn/TabBarIOS))
-;(def ui-tab-bar-ios-item (react-factory (.-Item rn/TabBarIOS)))
-(def ui-text-input (react-factory rn/TextInput))
-(def ui-touchbar-android (react-factory rn/TouchbarAndroid))
-(def ui-touchable-highlight (react-factory rn/TouchableHighlight))
-(def ui-touchable-native-feedback (react-factory rn/TouchableNativeFeedback))
-(def ui-touchable-opacity (react-factory rn/TouchableOpacity))
-(def ui-touchable-without-feedback (react-factory rn/TouchableWithoutFeedback))
-(def ui-view (react-factory rn/View))
-(def ui-virtualized-list (react-factory rn/VirtualizedList))
+(def ui-activity-indicator (react-factory (comp/isoget rn "ActivityIndicator")))
+(def ui-button (react-factory (comp/isoget rn "Button")))
+(def ui-drawer-layout-android (react-factory (comp/isoget rn "DrawerLayoutAndroid")))
+(def ui-flat-list (react-factory (comp/isoget rn "FlatList")))
+(def ui-image (react-factory (comp/isoget rn "Image")))
+(def ui-image-background (react-factory (comp/isoget rn "ImageBackground")))
+(def ui-input-accessory-view (react-factory (comp/isoget rn "InputAccessoryView")))
+(def ui-keyboard-avoiding-view (react-factory (comp/isoget rn "KeyboardAvoidingView")))
+(def ui-modal (react-factory (comp/isoget rn "Modal")))
+(def ui-picker (react-factory (comp/isoget rn "Picker")))
+(def ui-picker-ios (react-factory (comp/isoget rn "PickerIOS")))
+(def ui-progress-view-ios (react-factory (comp/isoget rn "ProgressViewIOS")))
+(def ui-refresh-control (react-factory (comp/isoget rn "RefreshControl")))
+(def ui-safe-area-view (react-factory (comp/isoget rn "SafeAreaView")))
+(def ui-scroll-view (react-factory (comp/isoget rn "ScrollView")))
+(def ui-section-list (react-factory (comp/isoget rn "SectionList")))
+(def ui-segmented-control-ios (react-factory (comp/isoget rn "SegmentedControlIOS")))
+(def ui-slider (react-factory (comp/isoget rn "Slider")))
+(def ui-status-bar (react-factory (comp/isoget rn "StatusBar")))
+(def ui-switch (react-factory (comp/isoget rn "Switch")))
+(def ui-tab-bar-ios (react-factory (comp/isoget rn "TabBarIOS")))
+;(def ui-tab-bar-ios-item (react-factory (.-Item (comp/isoget rn "TabBarIOS"))))
+(def ui-text-input (react-factory (comp/isoget rn "TextInput")))
+(def ui-touchbar-android (react-factory (comp/isoget rn "TouchbarAndroid")))
+(def ui-touchable-highlight (react-factory (comp/isoget rn "TouchableHighlight")))
+(def ui-touchable-native-feedback (react-factory (comp/isoget rn "TouchableNativeFeedback")))
+(def ui-touchable-opacity (react-factory (comp/isoget rn "TouchableOpacity")))
+(def ui-touchable-without-feedback (react-factory (comp/isoget rn "TouchableWithoutFeedback")))
+(def ui-view (react-factory (comp/isoget rn "View")))
+(def ui-virtualized-list (react-factory (comp/isoget rn "VirtualizedList")))
 
 (defn ios?
   "returns true if running in iOS"
   []
-  (= "ios" (.-OS platform)))
+  (= "ios" (comp/isoget platform "OS")))
 
 (defn android?
   "returns true if running in Android"
   []
-  (= "android" (.-OS platform)))
+  (= "android" (comp/isoget platform "OS")))
