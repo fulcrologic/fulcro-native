@@ -4,7 +4,7 @@
   <groupId>com.fulcrologic</groupId>
   <artifactId>fulcro-native</artifactId>
   <packaging>jar</packaging>
-  <version>0.0.7</version>
+  <version>0.0.8-SNAPSHOT</version>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -69,7 +69,7 @@
     <dependency>
       <groupId>com.fulcrologic</groupId>
       <artifactId>fulcro</artifactId>
-      <version>3.0.2</version>
+      <version>3.2.3</version>
     </dependency>
     <dependency>
       <groupId>com.taoensso</groupId>
