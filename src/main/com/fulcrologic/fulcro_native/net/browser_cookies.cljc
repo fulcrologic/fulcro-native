@@ -4,20 +4,21 @@
 
   * Make sure you call `initialize-cookie-store!`, which is async. Do not continue building your app until this returns.
   * Add `wrap-native-cookie-request` and `wrap-native-cookie-response` into the http-remote middleware.
-
-  If you are using websockets, then....TODO.
   "
   (:require
     #?(:cljs ["expo-secure-store" :as SecureStore])
     [com.fulcrologic.fulcro.algorithms.transit :as fcutil]
     [clojure.string :as str]
-    [clojure.core.async :as async]
     [taoensso.timbre :as log]
+    [taoensso.encore :as enc]
     [clojure.string :as str])
   #?(:clj (:import
             (java.text SimpleDateFormat)
             (java.util Locale TimeZone)
             (java.net URLDecoder))))
+
+(defn- uri-decode [s] #?(:clj  (URLDecoder/decode (str s) "UTF-8")
+                         :cljs (js/decodeURIComponent (str s))))
 
 (defn- now []
   #?(:clj (java.util.Date.) :cljs (js/Date.)))
@@ -62,7 +63,7 @@
         [name value] (parse-assignment assignment)
         base-cookie {:created (now)
                      :name    name
-                     :value   value}]
+                     :value   (uri-decode value)}]
     (reduce
       (fn [cookie raw-directive]
         (merge cookie (parse-directive raw-directive)))
@@ -93,9 +94,10 @@
 (defn save-cookie!
   "Put a cookie into the cookie store. Cookies are available for fetch immediately, though this does queue an async
    save of the cookies to secure storage."
-  [cookie-name cookie-map]
-  (swap! cookie-cache assoc cookie-name cookie-map)
-  (save-cache!))
+  [domain cookie-map]
+  (let [cookie-name (:name cookie-map)]
+    (swap! cookie-cache assoc-in [domain cookie-name] cookie-map)
+    (save-cache!)))
 
 (defn expired?
   "looks in the given cookie map and returns true if that cookie should be expired."
@@ -128,9 +130,56 @@
      :cljs (-> SecureStore
              (.getItemAsync cache-key #js {})
              (.then (fn [v]
-                      (reset! cookie-cache (expire-cookies (decode v)))
+                      (let [new-cookie-store (reduce-kv
+                                               (fn [result domain cookies] (assoc result domain (expire-cookies cookies)))
+                                               {}
+                                               (decode v))]
+                        (log/info "Initialized cookie store." new-cookie-store)
+                        (reset! cookie-cache new-cookie-store))
                       (when complete (complete))))
              (.catch (fn [e]
                        (log/error e "UNABLE TO RESTORE COOKIE STORE!")
                        (when complete (complete)))))))
 
+(defn set-cookies-from-headers! [domain headers]
+  (let [headers           (enc/map-keys (comp keyword str/lower-case) headers)
+        set-cookie-header (:set-cookie headers)
+        cookie            (when set-cookie-header (parse-set-cookie set-cookie-header))]
+    (when (and cookie (:name cookie))
+      (log/info "Received new cookie from server: " cookie)
+      (save-cookie! domain cookie))))
+
+(defn cookies
+  "Returns a string version of the current cookied for `domain` that can be used as the Cookie header"
+  [domain]
+  (let [cookies      (vals (get @cookie-cache domain {}))
+        cookie-pairs (map (fn [{:keys [name value]}] (str name "=" value)) cookies)]
+    (when (seq cookie-pairs)
+      (str/join "; " cookie-pairs))))
+
+(defn wrap-request-cookies
+  "Fulcro http-remote request middleware that uses the cookie store established by `wrap-response-cookies` to send
+   cookies back to the HTTP server."
+  [handler domain]
+  (fn [req]
+    (let [c   (cookies domain)
+          req (cond-> req
+                c (assoc-in [:headers "Cookie"] c))]
+      (log/spy :info ["sending cookies in request: " (:headers req)])
+      (handler req))))
+
+(defn wrap-response-cookies
+  "Fulcro http-remote response middleware for Native clients. Emulates saving any cookies that the server sends in
+   HTTP set-cookie headers via Expo SecureStore. `domain` is the domain your remote talks to, in case you have more
+   than one http remote in your native client."
+  [handler domain]
+  (fn [{:keys [headers] :as response}]
+    (set-cookies-from-headers! domain headers)
+    (handler response)))
+
+(comment
+  (initialize-cookie-store! identity)
+  (reset! cookie-cache {})
+  (save-cache!)
+  @cookie-cache
+  )
