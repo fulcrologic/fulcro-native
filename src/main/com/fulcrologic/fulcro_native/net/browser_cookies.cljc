@@ -165,7 +165,6 @@
     (let [c   (cookies domain)
           req (cond-> req
                 c (assoc-in [:headers "Cookie"] c))]
-      (log/spy :info ["sending cookies in request: " (:headers req)])
       (handler req))))
 
 (defn wrap-response-cookies
