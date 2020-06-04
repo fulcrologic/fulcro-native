@@ -1,5 +1,7 @@
 (ns com.fulcrologic.fulcro-native.bare
-  "A Base Fulcro wrapper for building apps that work on Bare expo React Native apps.
+  "A Base Fulcro wrapper for building apps that work on Bare React Native apps that use Expo APIs.
+
+  This is a separate ns because it needs to not require any of the managed workflow code.
 
   Usage:
 
