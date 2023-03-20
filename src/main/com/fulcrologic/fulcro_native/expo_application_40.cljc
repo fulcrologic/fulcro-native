@@ -1,6 +1,7 @@
 (ns com.fulcrologic.fulcro-native.expo-application-40
   (:require
     #?@(:cljs [["expo" :as expo]
+               ["expo-splash-screen" :as SplashScreen]
                ["create-react-class" :as crc]])
     [com.fulcrologic.fulcro-native.expo-assets-40 :as assets]
     [com.fulcrologic.fulcro.application :as app]
@@ -26,13 +27,15 @@
                  (crc
                    #js {:getInitialState
                         (fn []
+                          (.preventAutoHideAsync SplashScreen)
                           #js {:assetsLoaded false})
                         :componentDidMount
                         (fn []
                           (this-as ^js this
                             (reset! root-component-ref this)
                             (assets/cache-assets fonts images (fn []
-                                                                (.setState this #js {:assetsLoaded true})))))
+                                                                (.setState this #js {:assetsLoaded true})
+                                                                (.hideAsync SplashScreen)))))
                         :componentWillUnmount
                         (fn []
                           (reset! root-component-ref nil))
@@ -47,8 +50,7 @@
                                     body)
                                   (catch :default e
                                     (log/error e "Render failed"))))
-                              (assets/app-loading))
-                            ))})]
+                              nil)))})]
              (expo/registerRootComponent Root))))
        (catch :default e
          (log/error e "Unable to mount/refresh")))))

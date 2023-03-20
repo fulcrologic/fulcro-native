@@ -1,7 +1,6 @@
 (ns com.fulcrologic.fulcro-native.expo-assets-40
   (:require
-    #?@(:cljs [["expo-app-loading" :default AppLoading]
-               ["expo-asset" :refer [Asset]]
+    #?@(:cljs [["expo-asset" :refer [Asset]]
                ["expo-font" :as Font]])
     [taoensso.timbre :as log]
     [com.fulcrologic.fulcro-native.alpha.components :as comp]))
@@ -44,5 +43,3 @@
                 (if cb (cb))))
        (.catch (fn [err]
                  (log/error "Loading assets failed: " (aget err "message")))))))
-
-(def app-loading #?(:cljs (comp/react-factory AppLoading) :clj :stub))
