@@ -19,9 +19,10 @@ React Native components.
 This library is in active development. It is useful, but incomplete.
 
 == Usage
+WARNING: If you are using expo SDK +40 version, use `expo-application-40` as there were breaking changes. For older expo versions use `expo-application`
 
 Add the latest version to your project dependencies. At the moment the helper code
-only supports apps written with Expo, but if you look in `expo-application` you'll
+only supports apps written with Expo, but if you look in `expo-application-40` you'll
 see there isn't much to change to work with non-expo apps.
 
 We only test against the shadow-cljs build tool. If you're using standard cljs compiler for npm deps then you'll have to
@@ -67,15 +68,14 @@ You'll want your shadow-cljs config to include an after-load function that calls
 == Loading Fonts and Images with Expo
 
 Expo provides a mechanism to pre-load and cache fonts and static images during app startup.  If you use the 
-`com.fulcrologic.fulcro-native.expo-application/fulcro-app` function, this is taken care of for you.  All you need to do is specify the
+`com.fulcrologic.fulcro-native.expo-application-40/fulcro-app` function, this is taken care of for you.  All you need to do is specify the
 images and/or fonts you want to cache in the app configuration, as follows:
 
 [source, clojure]
 -----
-(ns
+(ns my.app.root
   (:require
-    [com.fulcrologic.fulcro-native.expo-application :as expoapp]
-    [com.fulcrologic.fulcro.application :as app]))
+    [com.fulcrologic.fulcro-native.expo-application-40 :as expo]))
 
 ; require images individually, so you can reference them when needed in the app
 (defonce profile-blank (js/require "../assets/images/profile.png"))
@@ -88,8 +88,8 @@ images and/or fonts you want to cache in the app configuration, as follows:
                 ["Avenir Next" (js/require "../assets/fonts/AvenirNext-Regular-08.ttf")]])
 
 
-(defonce app (expoapp/fulcro-app {:cached-images images
-                                  :cached-fonts fonts}))
+(defonce app (expo/fulcro-app {:cached-images images
+                               :cached-fonts fonts}))
 -----
 
 Note that the asset paths are relative to the /app directory, or wherever you have set the output directory for the mobile app build.
@@ -187,13 +187,11 @@ Something like this should work (pay attention to the goog-define):
   "Entry point for native client."
   (:require
     [app.application :refer [SPA]]
-    [com.fulcrologic.fulcro-native.expo-application :as expo]
+    [com.fulcrologic.fulcro-native.expo-application-40 :as expo]
     [app.mobile-ui.root :as root]
     [taoensso.timbre :as log]
     [com.fulcrologic.fulcro.networking.http-remote :as net]
-    [com.fulcrologic.fulcro.application :as app]
-    [com.fulcrologic.fulcro.ui-state-machines :as uism]
-    [app.model.session :as session]))
+    [com.fulcrologic.fulcro.application :as app]))
 
 ;; Allow defines in shadow-cljs to define API endpoint for dev mode (and even prod mode)
 (goog-define SERVER_URL "http://production.server.com/api")
@@ -232,4 +230,5 @@ section of your shadow-cljs build config:
                                        com.fulcrologic.fulcro.inspect.websocket-preload]}}}}
 -----
 
-See the fulcro native template for a working example.
+See the fulcro native template for a working example:
+https://github.com/fulcrologic/fulcro-native-template
